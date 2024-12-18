@@ -3,10 +3,13 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { AuthContext } from "../providers/AuthProvider";
 import axios from "axios";
+import toast from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const AddJob = () => {
   const { user } = useContext(AuthContext);
   const [startDate, setStartDate] = useState(new Date());
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     const form = e.target;
@@ -35,12 +38,18 @@ const AddJob = () => {
     console.log(formData);
 
     //Make a post request.
-    const { data } = await axios.post(
-      `${import.meta.env.VITE_API_URL}/add-job`,
-      formData
-    );
-
-    console.log(data);
+    try {
+      // 1. Make post request to db
+      await axios.post(`${import.meta.env.VITE_API_URL}/add-job`, formData);
+      // 2. reset form
+      form.reset();
+      // 3. show toast and navigate to my posted jobs
+      toast.success("DATA ADDED SUCCESSFULLY");
+      navigate("/my-posted-jobs");
+    } catch (err) {
+      console.log("Error", err);
+      toast.error("Something went wrong", err.message);
+    }
   };
 
   return (
@@ -80,9 +89,7 @@ const AddJob = () => {
             <div className="flex flex-col gap-2 ">
               <label className="text-gray-700">Deadline</label>
 
-              {/* Date Picker Input Field */}
               <DatePicker
-                className="border p-2 rounded-md"
                 selected={startDate}
                 onChange={(date) => setStartDate(date)}
               />
