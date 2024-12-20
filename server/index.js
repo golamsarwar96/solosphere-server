@@ -49,11 +49,27 @@ async function run() {
     //advanced all jobs get method
     app.get("/all-jobs", async (req, res) => {
       const filter = req.query.filter;
-      let query = {};
+
+      //search with case insensitive
+      // const search = req.query.search;
+
+      const sort = req.query.sort;
+
+      //Sort asc and dsc
+      let options = {};
+      if (sort) options = { sort: { deadline: sort === "asc" ? 1 : -1 } };
+
+      let query = {
+        // title: {
+        //   $regex: search,
+        //   $options: "i",
+        // },
+      };
+
       if (filter) {
         query.category = filter;
       }
-      const result = await jobsCollection.find(query).toArray();
+      const result = await jobsCollection.find(query, options).toArray();
       res.send(result);
     });
 
