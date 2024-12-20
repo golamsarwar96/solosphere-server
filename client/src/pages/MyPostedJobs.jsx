@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { AuthContext } from "../providers/AuthProvider";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { format } from "date-fns";
 
 const MyPostedJobs = () => {
   const { user } = useContext(AuthContext);
@@ -132,7 +133,7 @@ const MyPostedJobs = () => {
                       </td>
 
                       <td className="px-4 py-4 text-sm text-gray-500  whitespace-nowrap">
-                        {job.deadline}
+                        {format(new Date(job.deadline), "P")}
                       </td>
 
                       <td className="px-4 py-4 text-sm text-gray-500  whitespace-nowrap">
