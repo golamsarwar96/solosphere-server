@@ -22,6 +22,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const jobsCollection = client.db("solosphere").collection("jobs");
+    const bidsCollection = client.db("solosphere").collection("bids");
 
     //Jobs Related API's
     app.post("/add-job", async (req, res) => {
@@ -42,6 +43,17 @@ async function run() {
     //Get All jobs data.
     app.get("/jobs", async (req, res) => {
       const result = await jobsCollection.find().toArray();
+      res.send(result);
+    });
+
+    //advanced all jobs get method
+    app.get("/all-jobs", async (req, res) => {
+      const filter = req.query.filter;
+      let query = {};
+      if (filter) {
+        query.category = filter;
+      }
+      const result = await jobsCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -73,6 +85,65 @@ async function run() {
       const result = await jobsCollection.deleteOne(query);
       res.send(result);
     });
+
+    //bid related api's
+    app.post("/add-bid", async (req, res) => {
+      const bidData = req.body;
+      // step - 0 : Check if this user has already bid on this job
+      const query = { email: bidData.email, job_id: bidData.job_id };
+      // const alreadyExist = await bidsCollection.findOne(query);
+      // if (alreadyExist) {
+      //   return res.status(400).send("You have already placed a bit.");
+      // }
+      //step - 1 : get the data from the request body
+      const result = await bidsCollection.insertOne(bidData);
+      //step - 2 Bidcount
+      const filter = { _id: new ObjectId(bidData.jobId) };
+      const update = {
+        //bidCount : 1 means incrementing by 1
+        $inc: { bid_count: 1 },
+      };
+      const updateBidCount = await jobsCollection.updateOne(filter, update);
+      console.log(updateBidCount);
+      res.send(result);
+    });
+
+    //get all bids for a specific user
+
+    app.get("/bids/:email", async (req, res) => {
+      const isBuyer = req.query.buyer;
+      const email = req.params.email;
+      let query = {};
+      if (isBuyer) {
+        query.buyer = email;
+      } else {
+        query.email = email;
+      }
+      const result = await bidsCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    //UPDATE BID STATUS
+    app.patch("/bid-status-update/:id", async (req, res) => {
+      const id = req.params.id;
+      const { status } = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const updated = {
+        $set: {
+          status,
+        },
+      };
+      const result = await bidsCollection.updateOne(filter, updated);
+      res.send(result);
+    });
+
+    // bid request separately
+    // app.get("/bid-request/:email", async (req, res) => {
+    //   const email = req.params.email;
+    //   const query = { buyer: email };
+    //   const result = await bidsCollection.find(query).toArray();
+    //   res.send(result);
+    // });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
